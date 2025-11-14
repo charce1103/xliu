@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>線上嘸蝦米輸入法 (優化版)</title>
+
+    <link rel="stylesheet" type="text/css" href="liu/index.css" media="all">
+    <script src="liu/main.js?attr=rgvGhEO6B1BpLg8_mr3xYKoQK5ocotyTtEiXmrLvmlqr-HZ_dOS_TP1s7ewwyZdykX7oBNbdZgacJY7FLovgQzPDJ0id7aEnNSUQlCepENvoj0S_Lb23UvYkUMMpz3hc" charset="UTF-8"></script>
+    <script src="liu/liu.js"></script>
+    <script src="liu/liucommon.js"></script>
+    <script src="liu/hliu.js"></script>
+
+    <style>
+        /* 全局樣式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f4f9;
+        }
+
+        /* 主容器：使用 Flexbox 垂直佈局 */
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* 佔滿整個視窗高度 */
+            padding: 10px 10px 80px 10px; /* 上 右 下 左，給底部 80px 的空間 */
+			box-sizing: border-box; /* 確保 padding 不會讓容器超出 100vh */
+        }
+
+        /* 標題 */
+        h1 {
+            text-align: center;
+            padding: 10px 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+        
+        /* 輸入法工具列區域 */
+        #hliu {
+            flex-shrink: 0; /* 防止此區域被壓縮 */
+            margin-bottom: 10px;
+        }
+
+        .IMEMain {
+            width: 100%;
+            border-collapse: collapse; /* 讓表格無縫 */
+        }
+
+        /* 編輯器區域 */
+        .editor-area {
+            flex-grow: 1; /* 關鍵：讓此區域填滿所有剩餘空間 */
+            display: flex; /* 讓內部的 textarea 也填滿 */
+        }
+
+        #txt {
+            width: 100%;
+            height: 100%;
+            font-size: 1.2rem;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            resize: none; /* 禁止使用者手動調整大小 */
+        }
+        
+        /* 底部操作區域 */
+        .action-area {
+            flex-shrink: 0; /* 防止此區域被壓縮 */
+            padding-top: 10px;
+            text-align: center;
+        }
+
+        #copy-btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+		/* 新增的 CSS 樣式 */
+        #clear-btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            background-color: #dc3545; /* 使用警示性的紅色 */
+            color: white;
+            border: none;
+			border-radius: 5px;
+			transition: background-color 0.3s;
+			margin-left: 10px; /* 和左邊的按鈕產生間距 */
+		}
+
+#clear-btn:hover {
+    background-color: #c82333;
+}
+
+/* 在手機上，也讓清除按鈕滿版 */
+@media (max-width: 768px) {
+    #clear-btn {
+        padding: 12px;
+        width: 100%;
+        margin-left: 0;
+        margin-top: 10px; /* 在手機上垂直排列時，產生上方間距 */
+    }
+}
+
+        #copy-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* 響應式設計：當螢幕寬度小於 768px 時應用 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 5px;
+            }
+            h1 {
+                font-size: 1.2rem;
+            }
+            #txt {
+                font-size: 1rem;
+                padding: 10px;
+            }
+            #copy-btn {
+                padding: 12px;
+                width: 100%; /* 讓按鈕在手機上變滿版 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>線上嘸蝦米輸入法</h1>
+
+        <div style="display: none;" id="loadingDiv"><img src="liu/loader.gif"> 正在載入本服務之必要資料...</div>
+
+        <div id="hliu">
+            <table class="IMEMain" onselectstart="return false" border="0">
+                <tbody><tr>
+                    <td class="BtnArea" nowrap="nowrap"><img src="liu/btn_tmode.gif" class="BtnMode" id="BtnTMode" onclick="SwitchChMode();" style="display: inline;"><img src="liu/btn_amode.gif" class="BtnMode" id="BtnAMode" onclick="SwitchChMode();"><img src="liu/btn_half.gif" class="BtnMode" id="BtnHalf" onclick="SwitchHFMode();" style="display: inline;"><img src="liu/btn_full.gif" class="BtnMode" id="BtnFull" onclick="SwitchHFMode();"></td>
+                    <td class="CompWndArea"><div class="Wnd CompWnd"><span id="Comp"></span></div></td>
+                    <td class="CandWndArea"><div class="Wnd CandWnd" id="Cand"></div></td>
+                    <td class="HintArea"><img style="display: none;" src="liu/hint.gif" id="HintPic"></td>
+                    <td class="BtnArrowArea"><img style="display: inline;" src="liu/arrownone.gif" id="BtnArrow0"><img style="display: none;" src="liu/arrow1a.gif" class="BtnArrow" id="BtnArrow1a" onclick="BtnArrowClick(1);"><img style="display: none;" src="liu/arrow1b.gif" class="BtnArrow" id="BtnArrow1b" onclick="BtnArrowClick(2);"><img style="display: none;" src="liu/arrow2a.gif" class="BtnArrow" id="BtnArrow2a" onclick="BtnArrowClick(3);"><img style="display: none;" src="liu/arrow2b.gif" class="BtnArrow" id="BtnArrow2b" onclick="BtnArrowClick(4);"><img style="display: none;" src="liu/arrow3a.gif" class="BtnArrow" id="BtnArrow3a" onclick="BtnArrowClick(5);"><img style="display: none;" src="liu/arrow3b.gif" class="BtnArrow" id="BtnArrow3b" onclick="BtnArrowClick(6);"></td>
+                </tr>
+            </tbody></table>
+        </div>
+
+        <div class="editor-area">
+            <textarea id="txt" name="mydata"></textarea>
+        </div>
+        
+        <div class="action-area">
+           <button id="copy-btn">全選並複製</button>
+           <button id="clear-btn">清除內容</button>
+        </div>
+    </div>
+    
+    <script>document.getElementById("loadingDiv").style.display = 'block';</script>
+    <script src="liu/liu-uni.js"></script>
+    <script src="liu/phonetic.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const copyBtn = document.getElementById('copy-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const textArea = document.getElementById('txt');
+
+            let isComposing = false;
+
+            textArea.addEventListener('compositionstart', () => {
+                isComposing = true;
+            });
+
+            textArea.addEventListener('compositionend', () => {
+                isComposing = false;
+            });
+            
+            // 【✨ 關鍵修改在此 ✨】
+            textArea.addEventListener('keydown', (event) => {
+                // 對於螢幕鍵盤，我們仍然需要組字判斷
+                if (isComposing) {
+                    return;
+                }
+
+                // 呼叫舊的輸入法函式，並取得它的回傳值
+                const isHandledByIme = ImeKeyDown(event);
+                
+                // 舊的寫法中 (onkeydown="return ImeKeyDown()")，
+                // 若函式回傳 false，代表它已經處理了這個按鍵，瀏覽器不需再動作。
+                // 我們在這裡手動重現這個邏輯：
+                // 如果 isHandledByIme 是 false，我們就必須手動阻止瀏覽器的預設行為。
+                if (isHandledByIme === false) {
+                    event.preventDefault();
+                }
+
+                // 注意：這裡不需要再 `return ImeKeyDown(event)`，因為我們已經在上面呼叫過了
+            });
+
+            // 我們也對 keypress 做同樣的保護，以防萬一
+            textArea.addEventListener('keypress', (event) => {
+                if (isComposing) {
+                    return;
+                }
+                const isHandledByIme = ImeKeyPress(event);
+                if (isHandledByIme === false) {
+                    event.preventDefault();
+                }
+            });
+
+            textArea.addEventListener('keyup', (event) => {
+                if (isComposing) {
+                    return;
+                }
+                return ImeKeyUp(event); // keyup 通常用來更新狀態，比較沒有預設行為問題
+            });
+            
+            // --- 下方的按鈕事件維持不變 ---
+
+            copyBtn.addEventListener('click', () => {
+                const textToCopy = textArea.value;
+                if (!textToCopy) {
+                    alert('沒有內容可以複製！');
+                    return;
+                }
+                textArea.select();
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = '已複製！';
+                    copyBtn.style.backgroundColor = '#28a745';
+                    setTimeout(() => {
+                        copyBtn.textContent = originalText;
+                        copyBtn.style.backgroundColor = '#007bff';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('複製失敗: ', err);
+                    alert('複製失敗，您的瀏覽器可能不支援此功能。');
+                });
+            });
+
+            clearBtn.addEventListener('click', () => {
+                textArea.value = '';
+                textArea.focus();
+            });
+        });
+    </script>
+</body>
+</html>
